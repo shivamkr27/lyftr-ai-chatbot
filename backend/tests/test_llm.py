@@ -60,6 +60,35 @@ def test_failover(monkeypatch):
     assert result["resolution_source"] == "LIVE_INFERENCE"
 
 
+@pytest.mark.parametrize(
+    ("cache_enabled", "simulated_failures", "no_cache"),
+    [
+        (True, {}, False),
+        (True, {"key_1": 429}, True),
+        (False, {}, True),
+    ],
+)
+def test_cache_options_are_litellm_mapping(
+    monkeypatch, cache_enabled, simulated_failures, no_cache
+):
+    seen = {}
+
+    def fake_completion(**kwargs):
+        seen.update(kwargs)
+        return Response()
+
+    monkeypatch.setattr(llm_module.litellm, "completion", fake_completion)
+    completion(
+        "groq/llama-3.3-70b-versatile",
+        [{"role": "user", "content": "hello"}],
+        ["test-key-1", "test-key-2"],
+        ["key_1", "key_2"],
+        simulated_failures,
+        cache_enabled,
+    )
+    assert seen["cache"] == {"no-cache": no_cache}
+
+
 @pytest.mark.parametrize("failure_status", [429, 500])
 def test_simulated_key_one_failure_uses_key_two(monkeypatch, failure_status):
     seen = []

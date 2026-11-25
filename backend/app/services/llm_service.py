@@ -53,8 +53,9 @@ def completion(
                 "temperature": 0.2,
                 "timeout": 60,
             }
-            if cache_enabled and not simulated_failures:
-                kwargs["cache"] = True
+            kwargs["cache"] = {
+                "no-cache": not (cache_enabled and not simulated_failures)
+            }
 
             response = litellm.completion(**kwargs)
             elapsed = int((time.perf_counter() - started) * 1000)
