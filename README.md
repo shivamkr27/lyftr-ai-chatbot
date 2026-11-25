@@ -7,7 +7,7 @@ The static frontend is deployed on GitHub Pages. The backend is running on the e
 - Frontend: [https://shivamkr27.github.io/lyftr-ai-chatbot/](https://shivamkr27.github.io/lyftr-ai-chatbot/)
 - Backend API: [https://130.210.92.193.sslip.io](https://130.210.92.193.sslip.io)
 - Backend health: [https://130.210.92.193.sslip.io/health](https://130.210.92.193.sslip.io/health)
-- The API was verified with real Groq inference, cross-session cache hits, key fallback, HTTPS, and SQLite persistence across container recreation. The Pages workflow now defaults to this backend URL; the static site needs a successful workflow deployment of the latest commit to enable chat.
+- The API was verified with real Groq inference, cross-session cache hits, key fallback, HTTPS, and SQLite persistence across container recreation. The Pages workflow defaults to this backend URL, and live chat from the published Pages site returned `LIVE_INFERENCE`.
 - The existing VM has a persistent Docker volume at `/data`, an automatically renewed Let's Encrypt certificate, and SSH restricted to the active client IP. HTTP/HTTPS are public; unused inbound ports 6443 and 12250 were removed.
 
 ### GitHub Pages frontend preparation
@@ -121,7 +121,7 @@ curl.exe http://localhost:8001/sessions/s-cache-test/messages
 - Identical first messages in different sessions returned `LIVE_INFERENCE` then `LLM_CACHE`.
 - Simulated first-key 429 used key 2 successfully with one fallback attempt. Simulated all-key failure returned HTTP 503 and created no history.
 - SQLite history remained available after forcibly recreating the backend container; the named volume was retained.
-- HTTPS certificate, HTTP-to-HTTPS redirect, and GitHub Pages CORS preflight were verified. The remaining release check is to deploy the latest frontend workflow and try chat from the public Pages site.
+- HTTPS certificate, HTTP-to-HTTPS redirect, and GitHub Pages CORS preflight were verified. The latest Pages workflow succeeded, and a live chat from the public Pages site returned `READY` from `groq/openai/gpt-oss-120b`.
 
 ## 5. Setup Used: your editor and AI tools
 
