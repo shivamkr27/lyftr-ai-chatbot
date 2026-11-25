@@ -2,7 +2,8 @@ import React, { useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import "./styles.css";
 
-const API_BASE = (import.meta.env.VITE_API_BASE_URL || "http://localhost:8000").replace(/\/$/, "");
+const configuredApiBase = (import.meta.env.VITE_API_BASE_URL || "").trim();
+const API_BASE = (configuredApiBase || (import.meta.env.DEV ? "http://localhost:8000" : "")).replace(/\/$/, "");
 
 function makeSessionId() {
   return `s-${crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`}`;
@@ -22,6 +23,10 @@ function App() {
     if (!trimmed || loading) return;
     setItems((current) => [...current, { role: "user", content: trimmed }]);
     setMessage("");
+    if (!API_BASE) {
+      setItems((current) => [...current, { role: "error", content: "Chat backend is not configured. Set VITE_API_BASE_URL to enable chat." }]);
+      return;
+    }
     setLoading(true);
     try {
       const body = { session_id: sessionId, message: trimmed };
@@ -45,11 +50,12 @@ function App() {
   return (
     <main className="app-shell">
       <section className="chat-card">
-        <header><div><p className="eyebrow">LYFTR AI</p><h1>Chat workspace</h1></div><span className="status"><i /> Connected</span></header>
+        <header><div><p className="eyebrow">LYFTR AI</p><h1>Chat workspace</h1></div><span className={API_BASE ? "status" : "status offline"}><i /> {API_BASE ? "Backend URL set" : "Chat unavailable"}</span></header>
         <label className="prompt-field">System prompt
           <input data-testid="system-prompt-input" value={systemPrompt} onChange={(event) => setSystemPrompt(event.target.value)} placeholder="Optional instructions for this session" />
         </label>
         <div className="conversation" aria-live="polite">
+          {!API_BASE && <div className="error-message" role="status">The frontend is published without a backend URL. Chat will work after VITE_API_BASE_URL is configured.</div>}
           {items.length === 0 && <div className="empty-state"><div className="empty-mark">AI</div><p>Start a conversation</p></div>}
           {items.map((item, index) => item.role === "assistant" ? (
             <article className="message assistant" data-testid="assistant-message" key={index}>

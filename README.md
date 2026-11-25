@@ -20,11 +20,11 @@ The static frontend is prepared for GitHub Pages by `.github/workflows/deploy-pa
 After pushing this project to a GitHub repository:
 
 1. In **Settings → Pages**, set the source to **GitHub Actions**.
-2. In **Settings → Secrets and variables → Actions → Variables**, add `VITE_API_BASE_URL` with the public backend base URL (no trailing slash required).
+2. In **Settings → Secrets and variables → Actions → Variables**, optionally add `VITE_API_BASE_URL` with the public backend base URL (no trailing slash required).
 3. Ensure the backend's `ALLOWED_ORIGINS` includes the GitHub Pages site origin and that its persistent volume is mounted at `/data`.
 4. Push to `main` or run **Deploy frontend to GitHub Pages** from the Actions tab.
 
-The workflow intentionally fails if `VITE_API_BASE_URL` is unset, rather than publishing a frontend that points to localhost.
+If `VITE_API_BASE_URL` is unset, Pages can still publish the static UI; it clearly indicates chat is unavailable and does not fall back to localhost. Add the variable and redeploy once a backend exists to enable chat.
 The expected project-site URL is `https://shivamkr27.github.io/lyftr-ai-chatbot/` after a successful Pages deployment; this URL is not live or verified yet.
 
 ### Backend deployment preparation
