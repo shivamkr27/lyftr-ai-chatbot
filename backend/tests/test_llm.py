@@ -79,7 +79,7 @@ def test_cache_options_are_litellm_mapping(
 
     monkeypatch.setattr(llm_module.litellm, "completion", fake_completion)
     completion(
-        "groq/llama-3.3-70b-versatile",
+        "groq/openai/gpt-oss-120b",
         [{"role": "user", "content": "hello"}],
         ["test-key-1", "test-key-2"],
         ["key_1", "key_2"],
@@ -99,7 +99,7 @@ def test_simulated_key_one_failure_uses_key_two(monkeypatch, failure_status):
 
     monkeypatch.setattr(llm_module.litellm, "completion", fake_completion)
     result = completion(
-        "groq/llama-3.3-70b-versatile",
+        "groq/openai/gpt-oss-120b",
         [{"role": "user", "content": "hello"}],
         ["secret-one", "secret-two"],
         ["key_1", "key_2"],

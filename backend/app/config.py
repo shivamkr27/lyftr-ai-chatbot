@@ -27,6 +27,6 @@ def get_settings() -> Settings:
         database_url=os.getenv("DATABASE_URL", "sqlite:////data/app.db"),
         allowed_origins=_csv(os.getenv("ALLOWED_ORIGINS", "http://localhost:3000")),
         enable_failure_simulation=os.getenv("ENABLE_FAILURE_SIMULATION", "false").lower() == "true",
-        llm_model=os.getenv("LLM_MODEL", "groq/llama-3.3-70b-versatile"),
+        llm_model=os.getenv("LLM_MODEL", "groq/openai/gpt-oss-120b"),
         cache_enabled=os.getenv("CACHE_ENABLED", "true").lower() == "true",
     )

@@ -2,38 +2,36 @@
 
 ## 1. Live URLs
 
-The static frontend is deployed and verified. The backend was briefly deployed on the Oracle VM and then removed during cleanup; no active backend URL is available, so the public UI currently displays that chat is unavailable. No full-stack deployment is claimed because a ₹0 backend with verified persistent SQLite storage is not currently configured.
+The static frontend is deployed on GitHub Pages. The backend is running on the existing Oracle VM, with HTTPS and persistent SQLite storage. The VM's billing depends on the Oracle account's instance and storage terms; no new VM or paid hosting service was created.
 
-- Render documents that free web services cannot attach persistent disks: [Render storage/pricing information](https://render.com/articles/how-much-does-cloud-application-hosting-cost-for-small-businesses).
-- Hugging Face Spaces documents its default disk as non-persistent: [Spaces overview](https://huggingface.co/docs/hub/spaces-overview).
-- Fly.io lists usage-based charges and a monthly credit requiring a payment card: [Fly.io pricing](https://fly.io/pricing/). It is not treated as guaranteed ₹0 hosting.
-
-The frontend URL below is the verified static Pages deployment; no backend or full-stack URL is claimed. Re-evaluate hosting terms before deploying if the free-tier/storage conditions change.
-
-- Frontend: [https://shivamkr27.github.io/lyftr-ai-chatbot/](https://shivamkr27.github.io/lyftr-ai-chatbot/) (static UI verified; backend not configured)
-- Backend: No active public deployment; the temporary Oracle VM deployment has been removed.
+- Frontend: [https://shivamkr27.github.io/lyftr-ai-chatbot/](https://shivamkr27.github.io/lyftr-ai-chatbot/)
+- Backend API: [https://130.210.92.193.sslip.io](https://130.210.92.193.sslip.io)
+- Backend health: [https://130.210.92.193.sslip.io/health](https://130.210.92.193.sslip.io/health)
+- The API was verified with real Groq inference, cross-session cache hits, key fallback, HTTPS, and SQLite persistence across container recreation. The Pages workflow now defaults to this backend URL; the static site needs a successful workflow deployment of the latest commit to enable chat.
+- The existing VM has a persistent Docker volume at `/data`, an automatically renewed Let's Encrypt certificate, and SSH restricted to the active client IP. HTTP/HTTPS are public; unused inbound ports 6443 and 12250 were removed.
 
 ### GitHub Pages frontend preparation
 
 The static frontend is prepared for GitHub Pages by `.github/workflows/deploy-pages.yml` and `frontend/vite.config.js`. The workflow uses a repository-specific asset base path and publishes only `frontend/dist`; it does not host or package the FastAPI backend.
 
-After pushing this project to a GitHub repository:
+The workflow uses the repository Actions variable `VITE_API_BASE_URL` if set; otherwise it builds the frontend with the currently deployed backend URL. To change backend hosts later:
 
-1. In **Settings → Pages**, set the source to **GitHub Actions**.
-2. In **Settings → Secrets and variables → Actions → Variables**, optionally add `VITE_API_BASE_URL` with the public backend base URL (no trailing slash required).
-3. Ensure the backend's `ALLOWED_ORIGINS` includes the GitHub Pages site origin and that its persistent volume is mounted at `/data`.
+1. In **Settings → Pages**, keep the source set to **GitHub Actions**.
+2. In **Settings → Secrets and variables → Actions → Variables**, set `VITE_API_BASE_URL` to the new public backend base URL (no trailing slash).
+3. Ensure backend `ALLOWED_ORIGINS` includes the GitHub Pages origin.
 4. Push to `main` or run **Deploy frontend to GitHub Pages** from the Actions tab.
 
-If `VITE_API_BASE_URL` is unset, Pages can still publish the static UI; it clearly indicates chat is unavailable and does not fall back to localhost. Add the variable and redeploy once a backend exists to enable chat.
+If `VITE_API_BASE_URL` is unset, the workflow uses the current HTTPS API URL rather than localhost.
+
 ### Backend deployment preparation
 
-The backend is independently containerized in `backend/Dockerfile`. Deploy that image only to a host that supports a persistent volume mounted at `/data`, and configure `LLM_API_KEYS`, `DATABASE_URL=sqlite:////data/app.db`, `ALLOWED_ORIGINS`, `ENABLE_FAILURE_SIMULATION=true`, `LLM_MODEL`, and `CACHE_ENABLED=true` as backend environment variables. Store `LLM_API_KEYS` as a backend secret. Do not use an ephemeral filesystem for SQLite. Choose a current Groq model available to the account before configuring `LLM_MODEL`; the previously used `groq/llama-3.3-70b-versatile` was unavailable to the configured account. No public backend deployment is currently configured or claimed.
+The backend runs in Docker on the existing Oracle VM. Nginx terminates HTTPS and proxies to the backend bound to localhost; Docker stores SQLite in a named volume mounted at `/data`. The remote `.env` is root-readable only and is not in the repository. The configured LiteLLM model is `groq/openai/gpt-oss-120b`, corresponding to the `openai/gpt-oss-120b` model selected in the supplied Groq model list.
 
 ## 2. Run locally: with Docker and without
 
 ### Docker
 
-The root `.env` contains local configuration and is ignored by Git. It must contain two valid Groq keys in `LLM_API_KEYS` and a LiteLLM model currently available to the account. The previously used `groq/llama-3.3-70b-versatile` model was unavailable to the configured account; no replacement model has been selected. To prepare a fresh checkout:
+The root `.env` contains local configuration and is ignored by Git. It must contain two valid Groq keys in `LLM_API_KEYS` and the selected LiteLLM model `groq/openai/gpt-oss-120b`. The second key is used for failover when the first key is rate-limited or unavailable. To prepare a fresh checkout:
 
 ```powershell
 Copy-Item .env.example .env
@@ -41,7 +39,7 @@ Copy-Item .env.example .env
 make up
 ```
 
-Open `http://localhost:3000`. The API is available at `http://localhost:8000`.
+Open `http://localhost:3001`. The API is available at `http://localhost:8001`.
 
 Stop and remove containers:
 
@@ -80,7 +78,7 @@ npm run dev -- --port 5173
 ## 3. Design decisions: key fallback, caching, SQLite session storage
 
 - LiteLLM performs model calls and built-in local response caching. The complete system prompt, history, and new message form the cache context.
-- Configure Groq models using LiteLLM's `groq/<model-id>` form. Select a current model available to the account; the previously used `groq/llama-3.3-70b-versatile` was unavailable to the configured account.
+- Configure Groq models using LiteLLM's `groq/<model-id>` form. Groq model IDs containing a slash keep that slash, so the selected `openai/gpt-oss-120b` is configured as `groq/openai/gpt-oss-120b`.
 - Groq model availability is listed in the [official supported models documentation](https://console.groq.com/docs/models).
 - API keys are assigned key IDs in configuration order. Retryable HTTP 429, 500, 502, 503, and quota/rate-limit errors advance to the next key.
 - Simulated failures apply only for the current request and never invalidate real credentials.
@@ -92,10 +90,10 @@ npm run dev -- --port 5173
 Run the API:
 
 ```powershell
-curl.exe http://localhost:8000/health
+curl.exe http://localhost:8001/health
 
-curl.exe -X POST http://localhost:8000/chat -H "Content-Type: application/json" -d "{\"session_id\":\"s-cache-test\",\"message\":\"What is the capital of France?\"}"
-curl.exe -X POST http://localhost:8000/chat -H "Content-Type: application/json" -d "{\"session_id\":\"s-cache-test-2\",\"message\":\"What is the capital of France?\"}"
+curl.exe -X POST http://localhost:8001/chat -H "Content-Type: application/json" -d "{\"session_id\":\"s-cache-test\",\"message\":\"What is the capital of France?\"}"
+curl.exe -X POST http://localhost:8001/chat -H "Content-Type: application/json" -d "{\"session_id\":\"s-cache-test-2\",\"message\":\"What is the capital of France?\"}"
 ```
 
 The second identical first message should return `LLM_CACHE` with a cache-preserved token count and `key_id: null`.
@@ -103,25 +101,27 @@ The second identical first message should return `LLM_CACHE` with a cache-preser
 Failover:
 
 ```powershell
-curl.exe -X POST http://localhost:8000/chat -H "Content-Type: application/json" -H "X-Simulate-Failure: key_1=429" -d "{\"session_id\":\"s-failover\",\"message\":\"Explain resilience briefly.\"}"
+curl.exe -X POST http://localhost:8001/chat -H "Content-Type: application/json" -H "X-Simulate-Failure: key_1=429" -d "{\"session_id\":\"s-failover\",\"message\":\"Explain resilience briefly.\"}"
 
-curl.exe -X POST http://localhost:8000/chat -H "Content-Type: application/json" -H "X-Simulate-Failure: *=429" -d "{\"session_id\":\"s-failed\",\"message\":\"This request must fail.\"}"
+curl.exe -X POST http://localhost:8001/chat -H "Content-Type: application/json" -H "X-Simulate-Failure: *=429" -d "{\"session_id\":\"s-failed\",\"message\":\"This request must fail.\"}"
 ```
 
 Retrieve history:
 
 ```powershell
-curl.exe http://localhost:8000/sessions/s-cache-test/messages
+curl.exe http://localhost:8001/sessions/s-cache-test/messages
 ```
 
-### Verification status (local)
+### Verification status
 
-- Backend test suite: 16 passed using mocked provider responses; these are not real Groq inference tests.
+- Backend test suite: 17 passed using mocked provider responses.
 - Frontend build passed locally and with the `/lyftr-ai-chatbot/` Pages base path. `npm audit` reported zero vulnerabilities.
-- Docker Compose started both services for local verification; `/health` returned `ok` and the frontend returned HTTP 200. The stack was shut down after verification.
-- SQLite persistence was verified across container recreation using a temporary seeded fixture and the history endpoint. The fixture was removed afterward.
-- The all-keys simulated failure returned HTTP 503 and did not add session history. Partial key-1 fallback is verified in mocked tests only.
-- Real chat requests reached Groq but the configured model was unavailable to the account; Groq's model-catalog request from the VM returned Cloudflare HTTP 403 / error 1010. No replacement model was selected. Therefore successful real inference, real cache hits/token reuse, and real provider failover remain unverified.
+- Local Docker Compose: frontend returns HTTP 200, backend health is `ok`, and both ports are bound to localhost.
+- Live HTTPS inference returned `LIVE_INFERENCE` with model and per-message token metadata.
+- Identical first messages in different sessions returned `LIVE_INFERENCE` then `LLM_CACHE`.
+- Simulated first-key 429 used key 2 successfully with one fallback attempt. Simulated all-key failure returned HTTP 503 and created no history.
+- SQLite history remained available after forcibly recreating the backend container; the named volume was retained.
+- HTTPS certificate, HTTP-to-HTTPS redirect, and GitHub Pages CORS preflight were verified. The remaining release check is to deploy the latest frontend workflow and try chat from the public Pages site.
 
 ## 5. Setup Used: your editor and AI tools
 

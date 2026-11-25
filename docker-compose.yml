@@ -4,13 +4,13 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     ports:
-      - "8000:8000"
+      - "127.0.0.1:8001:8000"
     environment:
       LLM_API_KEYS: "${LLM_API_KEYS:?Set LLM_API_KEYS in the root .env file}"
       DATABASE_URL: "sqlite:////data/app.db"
-      ALLOWED_ORIGINS: "${ALLOWED_ORIGINS:-http://localhost:3000}"
+      ALLOWED_ORIGINS: "${ALLOWED_ORIGINS:-http://localhost:3001}"
       ENABLE_FAILURE_SIMULATION: "${ENABLE_FAILURE_SIMULATION:-true}"
-      LLM_MODEL: "${LLM_MODEL:-groq/llama-3.3-70b-versatile}"
+      LLM_MODEL: "${LLM_MODEL:-groq/openai/gpt-oss-120b}"
       CACHE_ENABLED: "${CACHE_ENABLED:-true}"
     volumes:
       - lyftr_data:/data
@@ -21,9 +21,9 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        VITE_API_BASE_URL: "${VITE_API_BASE_URL:-http://localhost:8000}"
+        VITE_API_BASE_URL: "${VITE_API_BASE_URL:-http://localhost:8001}"
     ports:
-      - "3000:3000"
+      - "127.0.0.1:3001:3000"
     depends_on:
       - backend
     restart: unless-stopped

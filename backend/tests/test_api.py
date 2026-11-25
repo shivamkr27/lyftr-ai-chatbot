@@ -6,7 +6,7 @@ os.environ["LLM_API_KEYS"] = "test-key-1,test-key-2"
 os.environ["DATABASE_URL"] = f"sqlite:///{tempfile.mkdtemp()}/test.db"
 os.environ["ALLOWED_ORIGINS"] = "http://localhost:3000"
 os.environ["ENABLE_FAILURE_SIMULATION"] = "true"
-os.environ["LLM_MODEL"] = "groq/llama-3.3-70b-versatile"
+os.environ["LLM_MODEL"] = "groq/openai/gpt-oss-120b"
 os.environ["CACHE_ENABLED"] = "true"
 
 import litellm
