@@ -2,7 +2,7 @@
 
 ## 1. Live URLs
 
-The static frontend is deployed and verified. The backend has not been deployed, so the public UI currently displays that chat is unavailable. No full-stack deployment is claimed: a ₹0 backend with persistent mounted SQLite storage has not been confirmed.
+The static frontend is deployed and verified. The backend was briefly deployed on the Oracle VM and then removed during cleanup; no active backend URL is available, so the public UI currently displays that chat is unavailable. No full-stack deployment is claimed because a ₹0 backend with verified persistent SQLite storage is not currently configured.
 
 - Render documents that free web services cannot attach persistent disks: [Render storage/pricing information](https://render.com/articles/how-much-does-cloud-application-hosting-cost-for-small-businesses).
 - Hugging Face Spaces documents its default disk as non-persistent: [Spaces overview](https://huggingface.co/docs/hub/spaces-overview).
@@ -11,7 +11,7 @@ The static frontend is deployed and verified. The backend has not been deployed,
 The frontend URL below is the verified static Pages deployment; no backend or full-stack URL is claimed. Re-evaluate hosting terms before deploying if the free-tier/storage conditions change.
 
 - Frontend: [https://shivamkr27.github.io/lyftr-ai-chatbot/](https://shivamkr27.github.io/lyftr-ai-chatbot/) (static UI verified; backend not configured)
-- Backend: Not yet deployed
+- Backend: No active public deployment; the temporary Oracle VM deployment has been removed.
 
 ### GitHub Pages frontend preparation
 
@@ -27,13 +27,13 @@ After pushing this project to a GitHub repository:
 If `VITE_API_BASE_URL` is unset, Pages can still publish the static UI; it clearly indicates chat is unavailable and does not fall back to localhost. Add the variable and redeploy once a backend exists to enable chat.
 ### Backend deployment preparation
 
-The backend is independently containerized in `backend/Dockerfile`. Deploy that image only to a host that supports a persistent volume mounted at `/data`, and configure `LLM_API_KEYS`, `DATABASE_URL=sqlite:////data/app.db`, `ALLOWED_ORIGINS`, `ENABLE_FAILURE_SIMULATION=true`, `LLM_MODEL=groq/llama-3.3-70b-versatile`, and `CACHE_ENABLED=true` as backend environment variables. Store `LLM_API_KEYS` as a backend secret. Do not use an ephemeral filesystem for SQLite. No public backend deployment is configured or claimed until a no-cost persistent-volume host is confirmed.
+The backend is independently containerized in `backend/Dockerfile`. Deploy that image only to a host that supports a persistent volume mounted at `/data`, and configure `LLM_API_KEYS`, `DATABASE_URL=sqlite:////data/app.db`, `ALLOWED_ORIGINS`, `ENABLE_FAILURE_SIMULATION=true`, `LLM_MODEL`, and `CACHE_ENABLED=true` as backend environment variables. Store `LLM_API_KEYS` as a backend secret. Do not use an ephemeral filesystem for SQLite. Choose a current Groq model available to the account before configuring `LLM_MODEL`; the previously used `groq/llama-3.3-70b-versatile` was unavailable to the configured account. No public backend deployment is currently configured or claimed.
 
 ## 2. Run locally: with Docker and without
 
 ### Docker
 
-The root `.env` contains local configuration and is ignored by Git. It must contain two Groq keys in `LLM_API_KEYS` and the LiteLLM model `groq/llama-3.3-70b-versatile`. To prepare a fresh checkout:
+The root `.env` contains local configuration and is ignored by Git. It must contain two valid Groq keys in `LLM_API_KEYS` and a LiteLLM model currently available to the account. The previously used `groq/llama-3.3-70b-versatile` model was unavailable to the configured account; no replacement model has been selected. To prepare a fresh checkout:
 
 ```powershell
 Copy-Item .env.example .env
@@ -64,7 +64,7 @@ $env:LLM_API_KEYS="key_1_value,key_2_value"
 $env:DATABASE_URL="sqlite:///D:/sem7/spm project/lyftr-ai-chatbot/app.db"
 $env:ALLOWED_ORIGINS="http://localhost:5173"
 $env:ENABLE_FAILURE_SIMULATION="true"
-$env:LLM_MODEL="groq/llama-3.3-70b-versatile"
+$env:LLM_MODEL="groq/<account-accessible-model>"
 uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
@@ -79,8 +79,8 @@ npm run dev -- --port 5173
 
 ## 3. Design decisions: key fallback, caching, SQLite session storage
 
-- LiteLLM performs real model calls and built-in local response caching. The complete system prompt, history, and new message form the cache context.
-- Groq inference uses LiteLLM's `groq/llama-3.3-70b-versatile` model identifier.
+- LiteLLM performs model calls and built-in local response caching. The complete system prompt, history, and new message form the cache context.
+- Configure Groq models using LiteLLM's `groq/<model-id>` form. Select a current model available to the account; the previously used `groq/llama-3.3-70b-versatile` was unavailable to the configured account.
 - Groq model availability is listed in the [official supported models documentation](https://console.groq.com/docs/models).
 - API keys are assigned key IDs in configuration order. Retryable HTTP 429, 500, 502, 503, and quota/rate-limit errors advance to the next key.
 - Simulated failures apply only for the current request and never invalidate real credentials.
@@ -116,12 +116,12 @@ curl.exe http://localhost:8000/sessions/s-cache-test/messages
 
 ### Verification status (local)
 
-- Backend test suite: 13 passed using mocked provider responses; these are not real Groq inference tests.
+- Backend test suite: 16 passed using mocked provider responses; these are not real Groq inference tests.
 - Frontend build passed locally and with the `/lyftr-ai-chatbot/` Pages base path. `npm audit` reported zero vulnerabilities.
-- Docker Compose started both services; `/health` returned `ok` and the frontend returned HTTP 200.
+- Docker Compose started both services for local verification; `/health` returned `ok` and the frontend returned HTTP 200. The stack was shut down after verification.
 - SQLite persistence was verified across container recreation using a temporary seeded fixture and the history endpoint. The fixture was removed afterward.
 - The all-keys simulated failure returned HTTP 503 and did not add session history. Partial key-1 fallback is verified in mocked tests only.
-- Real Groq requests from the host and backend container were blocked by Cloudflare with HTTP 403 / error 1010. Therefore real inference, real cache hits/token reuse, and real provider failover remain unverified.
+- Real chat requests reached Groq but the configured model was unavailable to the account; Groq's model-catalog request from the VM returned Cloudflare HTTP 403 / error 1010. No replacement model was selected. Therefore successful real inference, real cache hits/token reuse, and real provider failover remain unverified.
 
 ## 5. Setup Used: your editor and AI tools
 
