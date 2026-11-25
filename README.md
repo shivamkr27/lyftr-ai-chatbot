@@ -2,15 +2,15 @@
 
 ## 1. Live URLs
 
-Live URLs will be added only after deployment is verified. Public deployment has not been performed: no hosting target has yet been confirmed to provide both a ₹0 backend and persistent mounted storage for SQLite.
+The static frontend is deployed and verified. The backend has not been deployed, so the public UI currently displays that chat is unavailable. No full-stack deployment is claimed: a ₹0 backend with persistent mounted SQLite storage has not been confirmed.
 
 - Render documents that free web services cannot attach persistent disks: [Render storage/pricing information](https://render.com/articles/how-much-does-cloud-application-hosting-cost-for-small-businesses).
 - Hugging Face Spaces documents its default disk as non-persistent: [Spaces overview](https://huggingface.co/docs/hub/spaces-overview).
 - Fly.io lists usage-based charges and a monthly credit requiring a payment card: [Fly.io pricing](https://fly.io/pricing/). It is not treated as guaranteed ₹0 hosting.
 
-No live URL is claimed. Re-evaluate the hosting terms before deploying if the free-tier/storage conditions change.
+The frontend URL below is the verified static Pages deployment; no backend or full-stack URL is claimed. Re-evaluate hosting terms before deploying if the free-tier/storage conditions change.
 
-- Frontend: Not yet deployed
+- Frontend: [https://shivamkr27.github.io/lyftr-ai-chatbot/](https://shivamkr27.github.io/lyftr-ai-chatbot/) (static UI verified; backend not configured)
 - Backend: Not yet deployed
 
 ### GitHub Pages frontend preparation
@@ -25,8 +25,6 @@ After pushing this project to a GitHub repository:
 4. Push to `main` or run **Deploy frontend to GitHub Pages** from the Actions tab.
 
 If `VITE_API_BASE_URL` is unset, Pages can still publish the static UI; it clearly indicates chat is unavailable and does not fall back to localhost. Add the variable and redeploy once a backend exists to enable chat.
-The expected project-site URL is `https://shivamkr27.github.io/lyftr-ai-chatbot/` after a successful Pages deployment; this URL is not live or verified yet.
-
 ### Backend deployment preparation
 
 The backend is independently containerized in `backend/Dockerfile`. Deploy that image only to a host that supports a persistent volume mounted at `/data`, and configure `LLM_API_KEYS`, `DATABASE_URL=sqlite:////data/app.db`, `ALLOWED_ORIGINS`, `ENABLE_FAILURE_SIMULATION=true`, `LLM_MODEL=groq/llama-3.3-70b-versatile`, and `CACHE_ENABLED=true` as backend environment variables. Store `LLM_API_KEYS` as a backend secret. Do not use an ephemeral filesystem for SQLite. No public backend deployment is configured or claimed until a no-cost persistent-volume host is confirmed.
